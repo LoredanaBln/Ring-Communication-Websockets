@@ -3,6 +3,9 @@ package websockets.model;
 import websockets.client.NodeClient;
 import websockets.server.NodeServer;
 
+import java.net.URI;
+import java.sql.SQLOutput;
+
 /**
  * A class meant to represent a  node in the ring network.
  * Since a node can be both a server and a client it contains references to NodeClient and NodeServer to create the circular communication.
@@ -27,16 +30,31 @@ public class Node {
     }
 
     public void start() {
-        // TODO implement
+        server = new NodeServer(currentPort, this);
+        server.start();
     }
 
     public void connect() throws Exception {
-        // TODO implement
+        client = new NodeClient(new URI("ws://" + nextHost + ":" + nextPort), this);
+        client.connectBlocking();
     }
 
 
     public void handleMessage(String message) {
-        // TODO implement
-    }
+        try {
+            int value = Integer.parseInt(message);
+            System.out.println("[" + currentPort + "] Received: " + value);
 
+            if (value >= 100) {
+                System.out.println("[" + currentPort + "] Final value reached. Stopping.");
+                return;
+            }
+
+            int nextValue = value + 1;
+            Thread.sleep(200);
+            client.send(String.valueOf(nextValue));
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
 }
